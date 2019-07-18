@@ -249,3 +249,50 @@ def find_key_in_json(json_data, key):
         elif isinstance(v, dict):
             for id_val in find_key_in_json(v, key):
                 yield id_val
+
+
+def _check_resource_group_exists(cmd, rg_name):
+    rcf = _resource_client_factory(cmd.cli_ctx)
+    return rcf.resource_groups.check_existence(rg_name)
+
+
+def _check_resource_group_supports_os(cmd, rg_name, is_linux):
+    # get all appservice plans from RG
+    client = web_client_factory(cmd.cli_ctx)
+    plans = list(client.app_service_plans.list_by_resource_group(rg_name))
+    for item in plans:
+        # for Linux if an app with reserved==False exists, ASP doesn't support Linux
+        if is_linux and not item.reserved:
+            return False
+        elif not is_linux and item.reserved:
+            return False
+    return True
+
+
+def should_create_new_rg(cmd, default_rg, rg_name, is_linux):
+    if (default_rg and _check_resource_group_exists(cmd, default_rg) and
+            _check_resource_group_supports_os(cmd, default_rg, is_linux)):
+        return False
+    elif (_check_resource_group_exists(cmd, rg_name) and
+          _check_resource_group_supports_os(cmd, rg_name, is_linux)):
+        return False
+    return True
+
+
+def should_create_new_asp(cmd, rg_name, asp_name, location):
+    # get all appservice plans from RG
+    client = web_client_factory(cmd.cli_ctx)
+    for item in list(client.app_service_plans.list_by_resource_group(rg_name)):
+        if (item.name.lower() == asp_name.lower() and
+                item.location.replace(" ", "").lower() == location or
+                item.location == location):
+            return False
+    return True
+
+
+def should_create_new_app(cmd, rg_name, app_name):
+    client = web_client_factory(cmd.cli_ctx)
+    for item in list(client.web_apps.list_by_resource_group(rg_name)):
+        if item.name.lower() == app_name.lower():
+            return False
+    return True

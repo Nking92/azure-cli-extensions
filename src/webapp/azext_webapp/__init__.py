@@ -16,15 +16,16 @@ import azext_webapp._help
 class WebappExtCommandLoader(AzCommandsLoader):
     def __init__(self, cli_ctx=None):
         from azure.cli.core.commands import CliCommandType
+        from azure.cli.core.profiles import ResourceType
         webapp_custom = CliCommandType(
             operations_tmpl='azext_webapp.custom#{}')
         super(WebappExtCommandLoader, self).__init__(cli_ctx=cli_ctx,
                                                      custom_command_type=webapp_custom,
-                                                     min_profile="2017-03-10-profile")
+                                                     resource_type=ResourceType.MGMT_CONTAINERREGISTRY)
 
     def load_command_table(self, _):
         with self.command_group('webapp') as g:
-            g.custom_command('up', 'create_deploy_webapp', exception_handler=ex_handler_factory())
+            g.custom_command('container up2', 'create_deploy_container_app', exception_handler=ex_handler_factory())
             g.custom_command('remote-connection create', 'create_tunnel')
         return self.command_table
 
@@ -36,12 +37,15 @@ class WebappExtCommandLoader(AzCommandsLoader):
         webapp_name_arg_type = CLIArgumentType(configured_default='web', options_list=['--name', '-n'], metavar='NAME',
                                                completer=get_resource_name_completion_list('Microsoft.Web/sites'), id_part='name',
                                                help="name of the webapp. You can configure the default using 'az configure --defaults web=<name>'")
-        with self.argument_context('webapp up') as c:
-            c.argument('name', arg_type=webapp_name_arg_type)
-            c.argument('sku', arg_type=sku_arg_type)
-            c.argument('dryrun',
-                       help="shows summary of the create and deploy operation instead of executing it",
-                       default=False, action='store_true')
+        with self.argument_context('webapp container up2') as c:
+            c.argument('name', options_list=['--name', '-n'], help='name of the webapp to be created')
+            c.argument('source_location', options_list=['--source-location', '-s'],
+                        help='the path to the web app source directory')
+            c.argument('docker_custom_image_name', options_list=['--docker-custom-image-name', '-i'],
+                        help='the container image name and optionally the tag name (currently public DockerHub images only)')
+            c.argument('dryrun', help="show summary of the create and deploy operation instead of executing it", default=False, action='store_true')
+            c.argument('registry_rg', help="the resource group of the Azure Container Registry")
+            c.argument('registry_name', help="the name of the Azure Container Registry")
         with self.argument_context('webapp remote-connection create') as c:
             c.argument('port', options_list=['--port', '-p'],
                        help='Port for the remote connection. Default: Random available port', type=int)
