@@ -8,6 +8,7 @@ import tempfile
 from datetime import datetime
 
 from knack.log import get_logger
+from knack.util import CLIError
 
 #from azure.cli.command_modules.acr.build import acr_build
 from azure.cli.command_modules.acr._archive_utils import upload_source_code
@@ -21,7 +22,9 @@ def queue_acr_build(cmd, registry_rg, registry_name, img_name, src_dir):
     import os
     client_registries = get_acr_service_client(cmd.cli_ctx).registries
 
-    # acr_build(cmd, acr_client, registry_name, src_dir, img_name)
+    if not os.path.isdir(src_dir):
+        raise CLIError("Source directory should be a local directory path.")
+
     docker_file_path = os.path.join(src_dir, "Dockerfile")
     if not os.path.isfile(docker_file_path):
         raise CLIError("Unable to find '{}'.".format(docker_file_path))

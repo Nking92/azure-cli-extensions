@@ -25,7 +25,7 @@ class WebappExtCommandLoader(AzCommandsLoader):
 
     def load_command_table(self, _):
         with self.command_group('webapp') as g:
-            g.custom_command('container up2', 'create_deploy_container_app', exception_handler=ex_handler_factory())
+            g.custom_command('container up', 'create_deploy_container_app', exception_handler=ex_handler_factory())
             g.custom_command('remote-connection create', 'create_tunnel')
         return self.command_table
 
@@ -37,7 +37,7 @@ class WebappExtCommandLoader(AzCommandsLoader):
         webapp_name_arg_type = CLIArgumentType(configured_default='web', options_list=['--name', '-n'], metavar='NAME',
                                                completer=get_resource_name_completion_list('Microsoft.Web/sites'), id_part='name',
                                                help="name of the webapp. You can configure the default using 'az configure --defaults web=<name>'")
-        with self.argument_context('webapp container up2') as c:
+        with self.argument_context('webapp container up') as c:
             c.argument('name', options_list=['--name', '-n'], help='name of the webapp to be created')
             c.argument('source_location', options_list=['--source-location', '-s'],
                         help='the path to the web app source directory')
